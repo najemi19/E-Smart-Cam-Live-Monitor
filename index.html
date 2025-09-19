@@ -1,607 +1,310 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>E‑Smart Cam Monitor – Unified</title>
-  <meta name="theme-color" content="#1c2541" />
-  <style>
-    :root { --bg:#0b132b; --fg:#e0e6f5; --acc:#1c2541; --btn:#3a506b; --ok:#2ecc71; --bad:#e74c3c; --muted:#6b7a90; }
-    * { box-sizing: border-box; }
-    html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Naskh Arabic", Arial, sans-serif; }
-    header.topbar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--acc); position:sticky; top:0; z-index:10; }
-    .brand { font-weight:800; letter-spacing:.3px; }
-    .container { padding:16px; max-width:1200px; margin:0 auto; }
-    .grid { display:grid; grid-template-columns: 1fr; gap:14px; }
-    @media(min-width:1100px){ .grid { grid-template-columns: 380px 1fr; } }
-    .card { background:#121a33; border:1px solid #1e2a4f; border-radius:10px; padding:12px; }
-    .section-title { font-size:14px; opacity:.9; margin-bottom:8px; }
-    .controls, .options, .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0; }
-    select, button, input[type="text"], input[type="password"] { padding:8px 10px; border:none; border-radius:8px; background:#1a2345; color:var(--fg); outline:none; }
-    button { background:var(--btn); cursor:pointer; }
-    button.ghost { background:transparent; border:1px solid #6b7a90; }
-    button.small { padding:6px 10px; font-size:13px; }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    .list { display:flex; flex-direction:column; gap:10px; }
-    .cam { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px; border-radius:8px; background:#0f1733; border:1px solid #233058; }
-    .cam .meta { display:flex; flex-direction:column; gap:2px; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; }
-    .badge.ok { background:rgba(46,204,113,.15); color:var(--ok); border:1px solid rgba(46,204,113,.3); }
-    .badge.bad { background:rgba(231,76,60,.15); color:var(--bad); border:1px solid rgba(231,76,60,.3); }
-    .badge.muted { background:rgba(107,122,144,.15); color:var(--muted); border:1px solid rgba(107,122,144,.3); }
-    .player { background:#0a0f21; border:1px solid #223059; border-radius:10px; padding:10px; min-height:300px; display:flex; flex-direction:column; gap:8px; }
-    video, img.live-snap { width:100%; max-height:65vh; background:#000; border-radius:8px; }
-    .hint { font-size:12px; opacity:.85; }
-    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .divider { height:1px; background:#1f2b4e; margin:8px 0; }
-    #eventLog { max-height:220px; overflow-y:auto; font-size:13px; background:#0f1733; border:1px solid #233058; border-radius:6px; padding:6px; }
-    .log-filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .pill { padding:2px 8px; border-radius:999px; background:#1a2345; font-size:12px; border:1px solid #233058; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>E‑Smart Cam Monitor</title>
+<meta name="theme-color" content="#1c2541">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='100%25' height='100%25' fill='%231c2541'/%3E%3Ccircle cx='64' cy='64' r='40' fill='%232f80ed'/%3E%3Crect x='44' y='56' width='40' height='16' rx='8' fill='white'/%3E%3C/svg%3E" />
+
+<!-- مكتبات مطلوبة -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+:root {
+  --bg:#0b132b; --panel:#0f1733; --header:#1c2541; --pri:#2f80ed; --text:#fff;
+}
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Naskh Arabic", Arial, sans-serif;
+       background:var(--bg); color:var(--text); margin:0; }
+header { background:var(--header); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+h1 { margin:0; font-size:18px; font-weight:700; }
+.btn { background:var(--pri); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
+.btn:hover { opacity:.9; }
+.toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.toggle { display:flex; align-items:center; gap:8px; padding:6px 8px; background:#0f2147; border-radius:8px; }
+main { padding:16px; display:grid; grid-template-columns: 1fr; gap:16px; }
+#cameraList { background:var(--panel); border-radius:10px; padding:12px; }
+.camera-item { background:#0b1b3a; padding:10px; border-radius:8px; margin-bottom:8px; font-size:14px; }
+#qrReader { margin:0 auto; max-width:340px; display:none; background:var(--panel); border-radius:10px; padding:10px; }
+#playerContainer { background:var(--panel); border-radius:10px; padding:12px; }
+video, img.snapshot { width:100%; max-width:100%; border-radius:8px; background:#000; aspect-ratio:16/9; object-fit:contain; }
+.status { font-size:12px; opacity:.85; margin-top:6px; }
+#notification {
+  position: fixed; bottom: 20px; right: 20px; max-width: 320px;
+  background: var(--pri); color:#fff; padding:12px 16px; border-radius:10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.3); display:none; z-index: 9999;
+}
+#notification .actions { margin-top:8px; display:flex; gap:8px; }
+#installBanner { position:fixed; left:50%; transform:translateX(-50%); bottom:20px; z-index:9998;
+                 background:#102145; color:#fff; padding:10px 14px; border-radius:10px; display:none; }
+.small { font-size:12px; opacity:.8; }
+.grid { display:grid; grid-template-columns:1fr; gap:16px; }
+@media (min-width: 900px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+.hr { height:1px; background:#102145; margin:10px 0; border:0; }
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">E‑Smart Cam Monitor</div>
-    <div class="row">
-      <button id="btnInstall" class="ghost small" style="display:none;">تثبيت</button>
-      <span id="wsStatus" class="badge bad">WS: غير متصل</span>
-    </div>
-  </header>
 
-  <div class="container grid">
-    <!-- لوحة التحكم -->
-    <aside class="card">
-      <div class="section-title">لوحة التحكم</div>
-      <div class="actions">
-        <button id="refreshBtn" class="small">تحديث القائمة</button>
-      </div>
-      <div id="cams" class="list"></div>
-
-      <div class="divider"></div>
-      <div class="section-title">خيارات التشغيل</div>
-      <div class="options">
-        <label><input type="checkbox" id="dataSaver"> وضع توفير البيانات</label>
-        <label><input type="checkbox" id="lowLatency"> وضع منخفض التأخير</label>
-      </div>
-
-      <div class="divider"></div>
-      <div class="section-title">تبديل الكاميرا</div>
-      <div class="controls">
-        <select id="cameraSelect"></select>
-        <button id="playBtn">تشغيل</button>
-      </div>
-
-      <div class="divider"></div>
-      <div class="section-title">سجل الأحداث</div>
-      <div class="actions">
-        <button id="exportLogBtn" class="small">تصدير كـ CSV</button>
-        <span class="pill">فلترة:</span>
-        <div class="log-filters">
-          <label class="pill"><input type="checkbox" id="filterStart" checked> تشغيل</label>
-          <label class="pill"><input type="checkbox" id="filterStop" checked> إيقاف</label>
-          <label class="pill"><input type="checkbox" id="filterInfo" checked> معلومات</label>
-          <button id="clearLogBtn" class="small ghost">مسح السجل</button>
-        </div>
-      </div>
-      <div id="eventLog"></div>
-    </aside>
-
-    <!-- المشغل -->
-    <section class="card">
-      <div class="section-title">البث المباشر</div>
-      <div class="player">
-        <video id="player" controls autoplay muted playsinline></video>
-        <div class="row">
-          <span id="nowPlaying" class="hint">لا يوجد بث قيد التشغيل</span>
-          <span id="camStatusIndicator" class="badge bad" style="margin-right:8px;">🔴</span>
-        </div>
-        <div class="row" id="playerControls" style="display:none;">
-          <button id="btnStartCam" class="small">تشغيل الكاميرا</button>
-          <button id="btnStopCam" class="small ghost">إيقاف الكاميرا</button>
-        </div>
-        <div class="hint">ملاحظة: التشغيل التلقائي يتطلب كتم الصوت على الهواتف. يدعم HLS وLL‑HLS إذا كان الخادم مهيأً.</div>
-      </div>
-    </section>
+<header>
+  <h1>E‑Smart Cam Monitor</h1>
+  <div class="toolbar">
+    <button id="addByQR" class="btn">➕ إضافة كاميرا عبر QR</button>
+    <label class="toggle">
+      <input type="checkbox" id="dataSaver" />
+      توفير البيانات
+    </label>
+    <button id="installApp" class="btn" style="display:none;">⬇️ تثبيت كتطبيق</button>
   </div>
+</header>
 
-  <!-- Toast -->
-  <div id="toast" style="
-    position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.85);
-    color:#fff; padding:10px 16px; border-radius:6px; font-size:14px;
-    opacity:0; pointer-events:none; transition:opacity 0.4s ease; z-index:9999;
-  "></div>
+<main class="grid">
+  <section id="cameraList">
+    <strong>الكاميرات</strong>
+    <div id="cams"></div>
+    <div class="hr"></div>
+    <div class="small">نصيحة: أضف كاميرا عبر QR ليبدأ البث مباشرة.</div>
+  </section>
 
-  <!-- مكتبة Hls.js -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <section>
+    <div id="playerContainer">
+      <strong>المشغل</strong>
+      <div id="playerArea" class="status small">لا توجد كاميرا مشغّلة حاليًا.</div>
+    </div>
+    <div id="qrReader"></div>
+  </section>
+</main>
 
-  <script>
-    // تكوين عام
-    const API = {
-      list: '/api/cameras',
-      start: (name) => '/api/start/' + encodeURIComponent(name),
-      stop:  (name) => '/api/stop/' + encodeURIComponent(name),
-      signed: (cam) => '/api/stream-url?cam=' + encodeURIComponent(cam),
-      snapshot: (cam) => '/snapshots/' + encodeURIComponent(cam) + '.jpg'
+<div id="notification"></div>
+<div id="installBanner">يمكن تثبيت التطبيق على جهازك. اضغط زر التثبيت في الأعلى.</div>
+
+<script>
+/* ============================================================
+   حالة التطبيق
+============================================================ */
+let cameras = [];
+let snapshotInterval = null;
+let deferredPrompt = null;
+
+/* ============================================================
+   أدوات مساعدة
+============================================================ */
+function $(id) { return document.getElementById(id); }
+function setStatus(msg) { const area = $('playerArea'); area.textContent = msg; area.className = 'status small'; }
+function showNotification(message, actions = []) {
+  const box = $('notification');
+  box.innerHTML = '';
+  const p = document.createElement('div'); p.textContent = message; box.appendChild(p);
+  if (actions.length) {
+    const act = document.createElement('div'); act.className = 'actions';
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.className = 'btn'; b.textContent = a.label;
+      b.onclick = () => { a.onClick?.(); hideNotification(); };
+      act.appendChild(b);
+    });
+    box.appendChild(act);
+  }
+  box.style.display = 'block';
+  setTimeout(() => { box.style.display = 'none'; }, 6000);
+}
+function hideNotification(){ $('notification').style.display='none'; }
+
+/* ============================================================
+   عرض القائمة
+============================================================ */
+function renderCameraList() {
+  const container = $('cams');
+  container.innerHTML = '';
+  cameras.forEach((cam, idx) => {
+    const div = document.createElement('div');
+    div.className = 'camera-item';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+        <div>${cam.name} — ${cam.host}:${cam.port} (${cam.streamType || 'hls'})</div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" data-play="${idx}">تشغيل</button>
+          <button class="btn" data-del="${idx}" style="background:#c0392b;">حذف</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  container.querySelectorAll('[data-play]').forEach(b=>{
+    b.onclick = () => playStream(cameras[+b.dataset.play]);
+  });
+  container.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = () => {
+      const i = +b.dataset.del;
+      cameras.splice(i,1);
+      stopSnapshots();
+      $('playerArea').innerHTML = 'تم إيقاف المشغل.';
+      renderCameraList();
     };
+  });
+}
 
-    // عناصر DOM
-    let videoEl = document.getElementById('player');
-    const camsEl = document.getElementById('cams');
-    const playBtn = document.getElementById('playBtn');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const dataSaverChk = document.getElementById('dataSaver');
-    const lowLatencyChk = document.getElementById('lowLatency');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const nowPlayingEl = document.getElementById('nowPlaying');
-    const wsStatus = document.getElementById('wsStatus');
-    const btnInstall = document.getElementById('btnInstall');
-    const playerControls = document.getElementById('playerControls');
-    const btnStartCam = document.getElementById('btnStartCam');
-    const btnStopCam = document.getElementById('btnStopCam');
-    const camStatusIndicator = document.getElementById('camStatusIndicator');
-    const exportLogBtn = document.getElementById('exportLogBtn');
-    const clearLogBtn = document.getElementById('clearLogBtn');
-    const filterStart = document.getElementById('filterStart');
-    const filterStop  = document.getElementById('filterStop');
-    const filterInfo  = document.getElementById('filterInfo');
+/* ============================================================
+   تشغيل البث / وضع توفير البيانات
+============================================================ */
+function stopSnapshots(){
+  if (snapshotInterval){ clearInterval(snapshotInterval); snapshotInterval = null; }
+}
+function playStream(cam) {
+  const container = $('playerArea');
+  container.innerHTML = '';
+  stopSnapshots();
 
-    // حالة التطبيق
-    let snapshotInterval = null;
-    let hlsInstance = null;
-    let camsCache = [];
-    let lastRunningMap = new Map(); // لمقارنة تغيّر الحالة
-    let pollingTimer = null;
-    let ws = null;
-    let currentCam = null;
-    const eventHistory = []; // [{time, message, type}]
+  const dataSaver = $('dataSaver').checked;
 
-    // وظائف عامة
-    function showToast(message, type='info') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.style.background = type === 'ok' ? 'rgba(46,204,113,0.9)' :
-                               type === 'bad' ? 'rgba(231,76,60,0.9)' :
-                               'rgba(0,0,0,0.85)';
-      toast.style.opacity = '1';
-      clearTimeout(toast._timeout);
-      toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+  if (dataSaver) {
+    const img = document.createElement('img');
+    img.className = 'snapshot';
+    function updateSnapshot() {
+      img.src = `${cam.snapshotUrl || `http://${cam.host}:${cam.port}/${cam.cameraId || ''}/snapshot.jpg`}?ts=${Date.now()}`;
     }
+    updateSnapshot();
+    snapshotInterval = setInterval(updateSnapshot, cam.snapshotIntervalMs || 5000);
+    container.appendChild(img);
+    setStatus('وضع توفير البيانات: عرض لقطات متجددة');
+  } else {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
 
-    function addEventLog(message, type='info') {
-      const logBox = document.getElementById('eventLog');
-      const time = new Date().toLocaleTimeString('ar-MA', { hour12: false });
-      // حفظ الحدث
-      eventHistory.unshift({ time, message, type });
-      renderEventLog(); // يعيد العرض وفق الفلاتر
-    }
+    const streamUrl = cam.streamUrl || `http://${cam.host}:${cam.port}/${cam.cameraId || ''}/index.m3u8`;
 
-    function renderEventLog() {
-      const logBox = document.getElementById('eventLog');
-      logBox.innerHTML = '';
-      const activeTypes = new Set([
-        ...(filterStart.checked ? ['ok'] : []),
-        ...(filterStop.checked  ? ['bad'] : []),
-        ...(filterInfo.checked  ? ['info'] : [])
-      ]);
-      eventHistory
-        .filter(ev => activeTypes.has(ev.type))
-        .slice(0, 500) // حد أقصى للعرض
-        .forEach(ev => {
-          const color = ev.type === 'ok' ? '#2ecc71' : ev.type === 'bad' ? '#e74c3c' : '#ccc';
-          const entry = document.createElement('div');
-          entry.innerHTML = `<span style="color:${color}">[${ev.time}]</span> ${ev.message}`;
-          logBox.appendChild(entry);
-        });
-    }
-
-    function exportLogAsCSV() {
-      const filtered = eventHistory.filter(ev => {
-        if (ev.type === 'ok'  && !filterStart.checked) return false;
-        if (ev.type === 'bad' && !filterStop.checked) return false;
-        if (ev.type === 'info'&& !filterInfo.checked) return false;
-        return true;
+    if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (ev, data) => {
+        setStatus('تعذر تشغيل البث. قد تكون الشبكة بطيئة. جرّب تفعيل وضع توفير البيانات.');
       });
-      if (filtered.length === 0) {
-        alert('لا يوجد أحداث للتصدير وفق الفلاتر الحالية.');
-        return;
-      }
-      const header = 'الوقت,الحدث,النوع\n';
-      const rows = filtered.map(ev => `"${ev.time}","${ev.message.replace(/"/g,'""')}","${ev.type}"`).join('\n');
-      const csvContent = header + rows;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `event_log_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamUrl;
+    } else {
+      video.src = streamUrl;
     }
 
-    function labelOf(name) {
-      const cam = camsCache.find(c => c.name === name);
-      return cam ? (cam.label || cam.name) : name;
-    }
+    container.appendChild(video);
+    setStatus('تشغيل فيديو مباشر عبر HLS');
+  }
+}
 
-    function updatePlayerButtonsState() {
-      if (!currentCam) {
-        btnStartCam.disabled = true;
-        btnStopCam.disabled = true;
-        return;
-      }
-      const cam = camsCache.find(c => c.name === currentCam);
-      if (!cam) return;
-      btnStartCam.disabled = !!cam.running;
-      btnStopCam.disabled  = !cam.running;
-    }
-
-    function updateCamStatusIndicator() {
-      if (!currentCam) {
-        camStatusIndicator.textContent = '🔴';
-        camStatusIndicator.className = 'badge bad';
-        return;
-      }
-      const cam = camsCache.find(c => c.name === currentCam);
-      if (!cam) return;
-      if (cam.running) {
-        camStatusIndicator.textContent = '🟢';
-        camStatusIndicator.className = 'badge ok';
-      } else {
-        camStatusIndicator.textContent = '🔴';
-        camStatusIndicator.className = 'badge bad';
-      }
-    }
-
-    // جلب قائمة الكاميرات
-    async function loadCameras() {
-      const res = await fetch(API.list);
-      const cams = await res.json();
-      // تحديث خريطة الحالات السابقة قبل استبدال الكاش
-      cams.forEach(c => {
-        if (!lastRunningMap.has(c.name)) lastRunningMap.set(c.name, c.running);
-      });
-      camsCache = cams;
-      renderCameraList(cams);
-      fillSelect(cams);
-      updatePlayerButtonsState();
-      updateCamStatusIndicator();
-    }
-
-    function renderCameraList(cams) {
-      camsEl.innerHTML = '';
-      cams.forEach(cam => {
-        const div = document.createElement('div');
-        div.className = 'cam';
-        div.innerHTML = `
-          <div class="meta">
-            <strong>${cam.label || cam.name}</strong>
-            <span class="hint">الوضع: ${cam.mode} • الحالة:
-              <span class="badge ${cam.running ? 'ok' : 'bad'}">${cam.running ? 'شغّال' : 'متوقف'}</span>
-            </span>
-          </div>
-          <div class="row">
-            <button class="small" data-act="start" data-name="${cam.name}" ${cam.running ? 'disabled' : ''}>تشغيل</button>
-            <button class="small ghost" data-act="stop" data-name="${cam.name}" ${cam.running ? '' : 'disabled'}>إيقاف</button>
-            <button class="small" data-act="play" data-name="${cam.name}">عرض</button>
-          </div>
-        `;
-        camsEl.appendChild(div);
-      });
-    }
-
-    function fillSelect(cams) {
-      const current = cameraSelect.value;
-      cameraSelect.innerHTML = '';
-      cams.forEach(cam => {
-        const opt = document.createElement('option');
-        opt.value = cam.name;
-        opt.textContent = cam.label || cam.name;
-        cameraSelect.appendChild(opt);
-      });
-      if (current) cameraSelect.value = current;
-    }
-
-    // تشغيل بث
-    async function getSignedUrl(cam) {
-      const res = await fetch(API.signed(cam));
-      if (!res.ok) throw new Error('Failed to get signed URL');
-      const data = await res.json();
-      return data.url;
-    }
-
-    function clearPlayer() {
-      if (hlsInstance) { try { hlsInstance.destroy(); } catch {} hlsInstance = null; }
-      if (snapshotInterval) { clearInterval(snapshotInterval); snapshotInterval = null; }
-    }
-
-    async function playStream(cam) {
-      clearPlayer();
-      currentCam = cam;
-      playerControls.style.display = 'flex';
-
-      if (dataSaverChk.checked) {
-        const imgEl = document.createElement('img');
-        imgEl.className = 'live-snap';
-        const playerBox = document.querySelector('.player');
-        playerBox.innerHTML = '';
-        playerBox.appendChild(imgEl);
-        const update = () => imgEl.src = API.snapshot(cam) + '?ts=' + Date.now();
-        update();
-        snapshotInterval = setInterval(update, 2000);
-        nowPlayingEl.textContent = 'يعرض لقطات: ' + (labelOf(cam) || cam);
-        updatePlayerButtonsState();
-        updateCamStatusIndicator();
-        return;
-      }
-
-      const playerBox = document.querySelector('.player');
-      playerBox.innerHTML = '';
-      videoEl = document.createElement('video');
-      videoEl.id = 'player';
-      videoEl.controls = true;
-      videoEl.autoplay = true;
-      videoEl.muted = true;
-      videoEl.playsInline = true;
-      playerBox.appendChild(videoEl);
-
-      const src = await getSignedUrl(cam);
-      nowPlayingEl.textContent = 'يبث الآن: ' + (labelOf(cam) || cam);
-
-      if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        videoEl.src = src;
-        await videoEl.play().catch(()=>{});
-      } else if (Hls.isSupported()) {
-        hlsInstance = new Hls({
-          lowLatencyMode: !!lowLatencyChk.checked,
-          liveSyncDuration: lowLatencyChk.checked ? 1 : 2,
-          liveMaxLatencyDuration: lowLatencyChk.checked ? 3 : 6,
-          backBufferLength: 10
-        });
-        hlsInstance.loadSource(src);
-        hlsInstance.attachMedia(videoEl);
-        videoEl.play().catch(()=>{});
-      } else {
-        alert('هذا المتصفح لا يدعم HLS.');
-      }
-      updatePlayerButtonsState();
-      updateCamStatusIndicator();
-    }
-
-    // أحداث الواجهة
-    camsEl.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      const name = btn.dataset.name;
-      const act = btn.dataset.act;
-
+/* ============================================================
+   إضافة كاميرا عبر QR
+============================================================ */
+$('addByQR').addEventListener('click', () => {
+  const area = $('qrReader'); area.style.display = 'block';
+  const qr = new Html5Qrcode('qrReader');
+  qr.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
       try {
-        if (act === 'start' || act === 'stop') {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: act, name }));
-          } else {
-            await fetch(act === 'start' ? API.start(name) : API.stop(name), { method: 'POST' });
-          }
-          // تحديث UI فوري مبدئي
-          const c = camsCache.find(c => c.name === name);
-          if (c) c.running = (act === 'start');
-          renderCameraList(camsCache);
-          if (currentCam === name) {
-            updatePlayerButtonsState();
-            updateCamStatusIndicator();
-          }
-          showToast(`${labelOf(name)} ${act === 'start' ? 'تم تشغيلها 🟢' : 'تم إيقافها 🔴'}`, act === 'start' ? 'ok' : 'bad');
-          addEventLog(`${labelOf(name)} ${act === 'start' ? 'تم تشغيلها 🟢' : 'تم إيقافها 🔴'}`, act === 'start' ? 'ok' : 'bad');
-        } else if (act === 'play') {
-          cameraSelect.value = name;
-          playSelected();
-        }
-      } catch (err) {
-        console.error(err);
-        alert('حدث خطأ في العملية.');
-      }
-    });
-
-    refreshBtn.addEventListener('click', loadCameras);
-    playBtn.addEventListener('click', playSelected);
-    async function playSelected() {
-      const cam = cameraSelect.value;
-      await playStream(cam);
-    }
-
-    // أزرار التحكم داخل المشغل
-    btnStartCam.addEventListener('click', () => {
-      if (!currentCam) return;
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'start', name: currentCam }));
-      } else {
-        fetch(API.start(currentCam), { method: 'POST' });
-      }
-      const cam = camsCache.find(c => c.name === currentCam);
-      if (cam) cam.running = true;
-      updatePlayerButtonsState();
-      updateCamStatusIndicator();
-      showToast(`${labelOf(currentCam)} تم تشغيلها 🟢`, 'ok');
-      addEventLog(`${labelOf(currentCam)} تم تشغيلها 🟢`, 'ok');
-    });
-
-    btnStopCam.addEventListener('click', () => {
-      if (!currentCam) return;
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'stop', name: currentCam }));
-      } else {
-        fetch(API.stop(currentCam), { method: 'POST' });
-      }
-      const cam = camsCache.find(c => c.name === currentCam);
-      if (cam) cam.running = false;
-      updatePlayerButtonsState();
-      updateCamStatusIndicator();
-      showToast(`${labelOf(currentCam)} تم إيقافها 🔴`, 'bad');
-      addEventLog(`${labelOf(currentCam)} تم إيقافها 🔴`, 'bad');
-    });
-
-    // WebSocket + استطلاع احتياطي
-    function connectWS() {
-      const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-      const url = scheme + '://' + location.host + '/ws';
-      try {
-        ws = new WebSocket(url);
+        const parsed = JSON.parse(decodedText);
+        // مثال متوقع:
+        // { "name":"Cam 1","host":"192.168.1.10","port":8080,"streamType":"hls","cameraId":"front","token":"abc123" }
+        cameras.push(parsed);
+        renderCameraList();
+        playStream(parsed);
+        showNotification('✅ تمت إضافة الكاميرا وتشغيلها مباشرة.');
+        qr.stop(); area.style.display = 'none';
       } catch (e) {
-        startPolling();
-        return;
+        console.error('QR parse error', e);
+        showNotification('❌ خطأ في قراءة كود الـ QR. تأكد من صيغة JSON.');
       }
+    },
+    (err) => { /* ignore scan errors */ }
+  );
+});
 
-      ws.onopen = () => {
-        wsStatus.textContent = 'WS: متصل';
-        wsStatus.className = 'badge ok';
-        if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
-      };
-      ws.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data);
-
-          if (msg.type === 'status' && Array.isArray(msg.cameras)) {
-            // استخدم الخريطة للكشف عن التغييرات قبل التحديث
-            msg.cameras.forEach(c => {
-              const prev = lastRunningMap.get(c.name);
-              if (prev !== undefined && prev !== c.running) {
-                const text = `${labelOf(c.name)} ${c.running ? 'تم تشغيلها 🟢' : 'تم إيقافها 🔴'}`;
-                showToast(text, c.running ? 'ok' : 'bad');
-                addEventLog(text, c.running ? 'ok' : 'bad');
-              }
-              lastRunningMap.set(c.name, c.running);
-            });
-            // حدث قائمة الكاميرات مع الاحتفاظ بباقي بياناتها
-            camsCache = camsCache.map(c => {
-              const m = msg.cameras.find(x => x.name === c.name);
-              return m ? { ...c, running: !!m.running } : c;
-            });
-            renderCameraList(camsCache);
-            updatePlayerButtonsState();
-            updateCamStatusIndicator();
-          }
-
-          if (msg.type === 'camera' && msg.name) {
-            const prev = lastRunningMap.get(msg.name);
-            if (prev !== undefined && prev !== !!msg.running) {
-              const text = `${labelOf(msg.name)} ${msg.running ? 'تم تشغيلها 🟢' : 'تم إيقافها 🔴'}`;
-              showToast(text, msg.running ? 'ok' : 'bad');
-              addEventLog(text, msg.running ? 'ok' : 'bad');
-            }
-            lastRunningMap.set(msg.name, !!msg.running);
-            camsCache = camsCache.map(c => c.name === msg.name ? { ...c, running: !!msg.running } : c);
-            renderCameraList(camsCache);
-            updatePlayerButtonsState();
-            updateCamStatusIndicator();
-          }
-        } catch {}
-      };
-      ws.onclose = () => {
-        wsStatus.textContent = 'WS: غير متصل';
-        wsStatus.className = 'badge bad';
-        startPolling();
-        setTimeout(connectWS, 3000);
-      };
-      ws.onerror = () => {
-        try { ws.close(); } catch {}
-      };
+/* ============================================================
+   كشف السرعة وتفعيل التوفير تلقائيًا
+============================================================ */
+async function checkConnectionSpeed() {
+  const testUrl = 'https://via.placeholder.com/500x500.png?text=SpeedTest';
+  const start = Date.now();
+  try {
+    await fetch(testUrl, { cache: 'no-store' });
+    const s = (Date.now() - start) / 1000;
+    const kbps = (500 * 8) / s; // تقدير تقريبي
+    if (kbps < 800) {
+      $('dataSaver').checked = true;
+      showNotification(
+        '⚠️ تم تفعيل وضع توفير البيانات تلقائيًا بسبب بطء الشبكة.',
+        [{ label: 'إيقاف التوفير', onClick: () => { $('dataSaver').checked = false; } }]
+      );
     }
+  } catch {
+    // تجاهل فشل الاختبار
+  }
+}
+checkConnectionSpeed();
 
-    function startPolling() {
-      if (pollingTimer) return;
-      pollingTimer = setInterval(async () => {
-        const prevMap = new Map(lastRunningMap);
-        await loadCameras();
-        // قارن واظهر إشعارات عند التغيير
-        camsCache.forEach(c => {
-          const prev = prevMap.get(c.name);
-          if (prev !== undefined && prev !== c.running) {
-            const text = `${labelOf(c.name)} ${c.running ? 'تم تشغيلها 🟢' : 'تم إيقافها 🔴'}`;
-            showToast(text, c.running ? 'ok' : 'bad');
-            addEventLog(text, c.running ? 'ok' : 'bad');
-          }
-          lastRunningMap.set(c.name, c.running);
-        });
-      }, 5000);
-    }
+/* ============================================================
+   تبديل وضع التوفير أثناء التشغيل
+============================================================ */
+$('dataSaver').addEventListener('change', () => {
+  const current = cameras[cameras.length - 1];
+  if (current) playStream(current);
+});
 
-    // Service Worker ديناميكي
-    (function registerSW() {
-      if (!('serviceWorker' in navigator)) return;
-      const swCode = `
-        const CACHE='ui-v1';
-        const ASSETS=['/','/index.html'];
-        self.addEventListener('install', e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
-        self.addEventListener('activate', e=>{e.waitUntil(self.clients.claim())});
-        self.addEventListener('fetch', e=>{
-          const url=new URL(e.request.url);
-          if(url.pathname.startsWith('/streams/')||url.pathname.startsWith('/snapshots/')) return;
-          if(e.request.method!=='GET') return;
-          e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-        });
-      `;
-      const blob = new Blob([swCode], { type:'text/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl);
-    })();
-
-    // Manifest ديناميكي + أيقونة SVG
-    (function dynamicManifest() {
-      const svg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="100%" height="100%" fill="#1c2541"/><circle cx="256" cy="256" r="160" fill="#3a506b"/><circle cx="256" cy="256" r="80" fill="#0b132b"/><rect x="200" y="120" width="112" height="28" rx="14" fill="#e0e6f5"/></svg>');
-      const icon512 = 'data:image/svg+xml;charset=utf-8,' + svg;
-      const manifest = {
-        name: 'E‑Smart Cam Monitor',
-        short_name: 'CamMonitor',
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#0b132b',
-        theme_color: '#1c2541',
-        icons: [
-          { src: icon512, sizes: '192x192', type: 'image/svg+xml' },
-          { src: icon512, sizes: '512x512', type: 'image/svg+xml' }
-        ]
-      };
-      const blob = new Blob([JSON.stringify(manifest)], { type:'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = url;
-      document.head.appendChild(link);
-    })();
-
-    // زر التثبيت
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      btnInstall.style.display = 'inline-block';
+/* ============================================================
+   PWA: تسجيل Service Worker داخل نفس الملف
+============================================================ */
+if ('serviceWorker' in navigator) {
+  // نص SW بسيط: cache-first للغلاف
+  const swCode = `
+    const CACHE='esm-cache-v1';
+    const ASSETS = self.registration ? [] : [];
+    self.addEventListener('install', e=>{
+      e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])).then(()=>self.skipWaiting()));
     });
-    btnInstall.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        btnInstall.style.display = 'none';
+    self.addEventListener('activate', e=>{ e.waitUntil(self.clients.claim()); });
+    self.addEventListener('fetch', e=>{
+      const url = new URL(e.request.url);
+      if (e.request.method==='GET' && (url.origin===location.origin)) {
+        e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request)));
       }
     });
+  `;
+  const blob = new Blob([swCode], { type: 'text/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
 
-    // أحداث سجل الأحداث
-    exportLogBtn.addEventListener('click', exportLogAsCSV);
-    clearLogBtn.addEventListener('click', () => {
-      eventHistory.length = 0;
-      renderEventLog();
-      showToast('تم مسح سجل الأحداث', 'info');
-    });
-    [filterStart, filterStop, filterInfo].forEach(cb => cb.addEventListener('change', renderEventLog));
+/* ============================================================
+   PWA: زر التثبيت
+============================================================ */
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $('installApp').style.display = 'inline-block';
+  $('installBanner').style.display = 'block';
+});
+$('installApp').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $('installApp').style.display = 'none';
+  $('installBanner').style.display = 'none';
+});
 
-    // بدء التشغيل
-    (async function init() {
-      await loadCameras();
-      // ملء خريطة الحالات للمرّة الأولى
-      camsCache.forEach(c => lastRunningMap.set(c.name, c.running));
-      connectWS(); // يعود للاستطلاع تلقائيًا إذا لم يتوفر WS
-      addEventLog('الواجهة بدأت العمل ✅', 'info');
-    })();
-  </script>
+/* ============================================================
+   حفظ الكاميرات محليًا
+============================================================ */
+function saveCams(){ try{ localStorage.setItem('esm_cams', JSON.stringify(cameras)); }catch{} }
+function loadCams(){ try{ const d = localStorage.getItem('esm_cams'); if(d){ cameras = JSON.parse(d) || []; } }catch{} }
+window.addEventListener('beforeunload', saveCams);
+loadCams(); renderCameraList();
+</script>
+
 </body>
 </html>
